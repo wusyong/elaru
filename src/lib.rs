@@ -5,27 +5,24 @@
 //!
 //! See the [`LRUCache`] docs for more details.
 
-#![warn(
-    missing_debug_implementations,
-    missing_docs,
-    unreachable_pub
-)]
+#![warn(missing_debug_implementations, missing_docs, unreachable_pub)]
 
-use std::collections::{HashMap, hash_map::Entry as MapEntry};
+use std::collections::{hash_map::Entry as MapEntry, HashMap};
 
-/// A LRU cache using a statically-sized array for storage.
+/// A LRU cache builds on top of the HashMap from standard library.
 ///
-/// `LRUCache` uses a fixed-capacity array for storage. It provides `O(1)` insertion, and `O(n)`
-/// lookup.
+/// `LRUCache` uses `std::collections::HashMap` for storage. It provides `O(1)` performance on
+/// `insert`, `get`, `remove_lru` and many other APIs.
 ///
-/// All items are stored inline within the `LRUCache`, so it does not impose any heap allocation or
-/// indirection.  A linked list is used to record the cache order, so the items themselves do not
-/// need to be moved when the order changes.  (This is important for speed if the items are large.)
+/// All entries are linked inlined within the `LRUCache` without raw pointer manipulation, so it is
+/// complete memory safe and doesn't suffer any undefined behavior. A linked list is used to record
+/// the cache order, so the items themselves do not need to be moved when the order changes.
+/// (This is important for speed if the items are large.)
 ///
 /// # Example
 ///
 /// ```
-/// use elaru::{LRUEntry, Entry};
+/// use elaru::{LRUCache, Entry};
 ///
 /// // Create an empty cache, then insert some items.
 /// let mut cache = LRUCache::new(3);
@@ -45,8 +42,7 @@ use std::collections::{HashMap, hash_map::Entry as MapEntry};
 #[derive(Debug, Clone)]
 pub struct LRUCache<T> {
     /// The most-recently-used entry is at index `head`. The entries form a linked list, linked to
-    /// each other by indices within the `entries` array.  After an entry is added to the array,
-    /// its index never changes, so these links are never invalidated.
+    /// each other by key within the `entries` map.
     entries: HashMap<u16, Entry<T>>,
     /// Index of the first entry. If the cache is empty, ignore this field.
     head: u16,
@@ -65,8 +61,7 @@ pub struct Entry<T> {
     next: u16,
 }
 
-impl<T> LRUCache<T>
-{
+impl<T> LRUCache<T> {
     /// Create a new LRU cache that can hold `capacity` of entries.
     pub fn new(capacity: usize) -> Self {
         let cache = LRUCache {
@@ -94,13 +89,17 @@ impl<T> LRUCache<T>
 
     /// Returns the entry in the list with given key.
     pub fn get(&mut self, key: &u16) -> Option<&T> {
-        if self.entries.contains_key(key) { self.touch_index(*key); }
+        if self.entries.contains_key(key) {
+            self.touch_index(*key);
+        }
         self.entries.get(key).map(|e| &e.val)
     }
 
     /// Returns a mutable reference to the entry in the list with given key.
     pub fn get_mut(&mut self, key: &u16) -> Option<&mut T> {
-        if self.entries.contains_key(key) { self.touch_index(*key); }
+        if self.entries.contains_key(key) {
+            self.touch_index(*key);
+        }
         self.entries.get_mut(key).map(|e| &mut e.val)
     }
 
@@ -109,7 +108,6 @@ impl<T> LRUCache<T>
     /// This item becomes the front (most-recently-used) item in the cache.  If the cache is full,
     /// the back (least-recently-used) item will be removed.
     pub fn insert(&mut self, key: u16, val: T) -> Option<T> {
-
         // If the cache is full, remove the tail entry.
         if self.entries.len() == self.capacity {
             self.remove_lru().expect("Invalid entry access");
@@ -117,10 +115,21 @@ impl<T> LRUCache<T>
 
         let old = match self.entries.entry(key) {
             MapEntry::Occupied(mut e) => {
-                let old_val = e.insert(Entry { val, prev: e.get().prev, next: e.get().next});
+                let old_val = e.insert(Entry {
+                    val,
+                    prev: e.get().prev,
+                    next: e.get().next,
+                });
                 Some(old_val.val)
-            },
-            MapEntry::Vacant(e) => { e.insert(Entry { val, prev: 0, next: 0}); None },
+            }
+            MapEntry::Vacant(e) => {
+                e.insert(Entry {
+                    val,
+                    prev: 0,
+                    next: 0,
+                });
+                None
+            }
         };
 
         self.push_front(key);
@@ -169,13 +178,19 @@ impl<T> LRUCache<T>
         if i == self.head {
             self.head = next;
         } else {
-            self.entries.get_mut(&prev).expect("Invalid entry access").next = next;
+            self.entries
+                .get_mut(&prev)
+                .expect("Invalid entry access")
+                .next = next;
         }
 
         if i == self.tail {
             self.tail = prev;
         } else {
-            self.entries.get_mut(&next).expect("Invalid entry access").prev = prev;
+            self.entries
+                .get_mut(&next)
+                .expect("Invalid entry access")
+                .prev = prev;
         }
     }
 
@@ -185,7 +200,10 @@ impl<T> LRUCache<T>
             self.tail = i;
         } else {
             self.entries.get_mut(&i).expect("Invalid entry access").next = self.head;
-            self.entries.get_mut(&self.head).expect("Invalid entry access").prev = i;
+            self.entries
+                .get_mut(&self.head)
+                .expect("Invalid entry access")
+                .prev = i;
         }
         self.head = i;
     }
@@ -212,7 +230,11 @@ where
 
         // Use a raw pointer because the compiler doesn't know that subsequent calls can't alias.
         //let entry = unsafe { &mut *(&mut self.cache.entries[self.pos as usize] as *mut Entry<T>) };
-        let (key, entry) = self.cache.entries.get_key_value(&self.pos).expect("Invalid entry access");
+        let (key, entry) = self
+            .cache
+            .entries
+            .get_key_value(&self.pos)
+            .expect("Invalid entry access");
 
         if self.pos == self.cache.tail {
             self.done = true;

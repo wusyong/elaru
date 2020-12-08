@@ -37,7 +37,7 @@ fn insert() {
     assert_eq!(
         items(&mut cache),
         [5, 4, 3, 2],
-        "Least-recently-used item evicted."
+        "Least-recently-used item cleared."
     );
 
     cache.insert(6, "f");
@@ -47,7 +47,7 @@ fn insert() {
     assert_eq!(
         items(&mut cache),
         [9, 8, 7, 6],
-        "Least-recently-used item evicted."
+        "Least-recently-used item cleared."
     );
 }
 
@@ -72,12 +72,13 @@ fn lookup() {
         "Matching item moved to front."
     );
 }
+
 #[test]
 fn clear() {
     let mut cache = LRUCache::new(4);
     cache.insert(1, 100);
     cache.clear();
-    assert_eq!(items(&mut cache), [], "all items evicted");
+    assert_eq!(items(&mut cache), [], "all items cleared");
 
     cache.insert(1, 100);
     cache.insert(2, 200);
@@ -85,6 +86,38 @@ fn clear() {
     cache.insert(4, 400);
     assert_eq!(items(&mut cache), [4, 3, 2, 1]);
     cache.clear();
-    assert_eq!(items(&mut cache), [], "all items evicted again");
+    assert_eq!(items(&mut cache), [], "all items cleared again");
 }
 
+#[test]
+fn remove_lru() {
+    let mut cache = LRUCache::new(4);
+
+    cache.insert(1, 100);
+    cache.insert(2, 200);
+    cache.insert(3, 300);
+    cache.insert(4, 400);
+    cache.remove_lru();
+    assert_eq!(
+        items(&mut cache),
+        [4, 3, 2],
+        "Least-recently-used item cleared."
+    );
+}
+
+#[test]
+fn iter() {
+    let mut cache = LRUCache::new(4);
+
+    cache.insert(1, 100);
+    cache.insert(2, 200);
+    cache.insert(3, 300);
+    cache.insert(4, 400);
+
+    let mut iter = cache.iter();
+    assert_eq!(iter.next(), Some((4, &400)));
+    assert_eq!(iter.next(), Some((3, &300)));
+    assert_eq!(iter.next(), Some((2, &200)));
+    assert_eq!(iter.next(), Some((1, &100)));
+    assert_eq!(iter.next(), None);
+}

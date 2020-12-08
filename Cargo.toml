@@ -1,6 +1,6 @@
 [package]
 name = "elaru"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Ngo Iok Ui <wusyong9104@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -8,3 +8,7 @@ description = "Memory safe implementation of LRU cache."
 categories = ["data-structures"]
 keywords = ["lru", "cache"]
 readme = "README.md"
+documentaion = "https://docs.rs/elaru"
+homepage = "https://github.com/wusyong/elaru"
+repository = "https://github.com/wusyong/elaru"
+
