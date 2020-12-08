@@ -5,3 +5,4 @@ and `remove_lru`.
 
 See the [documentation](https://docs.rs/elaru) for examples and more details.
 
+Acknowledgement: This crate is heavily inspired by [uluru](https://crates.io/crates/uluru), a no_std lru implementation from servo.
