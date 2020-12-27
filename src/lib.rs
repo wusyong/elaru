@@ -116,6 +116,7 @@ impl<T> LRUCache<T> {
     pub fn insert(&mut self, key: u16, val: T) -> Option<T> {
         // If the cache is full, remove the tail entry.
         if self.entries.len() == self.capacity {
+            #[cfg(not(feature = "unbound"))]
             self.remove_lru().expect("Invalid entry access");
         }
 
