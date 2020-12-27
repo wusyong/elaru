@@ -1,6 +1,6 @@
 [package]
 name = "elaru"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Ngo Iok Ui <wusyong9104@gmail.com>"]
 edition = "2018"
 license = "MIT OR Apache-2.0"
@@ -12,3 +12,8 @@ documentaion = "https://docs.rs/elaru"
 homepage = "https://github.com/wusyong/elaru"
 repository = "https://github.com/wusyong/elaru"
 
+[features]
+default = []
+
+[dependencies]
+fnv = { version = "1.0.7", optional = true }

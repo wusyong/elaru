@@ -7,6 +7,8 @@
 
 #![warn(missing_debug_implementations, missing_docs, unreachable_pub)]
 
+#[cfg(feature = "fnv")]
+use fnv::FnvBuildHasher;
 use std::collections::{hash_map::Entry as MapEntry, HashMap};
 
 /// A LRU cache builds on top of the HashMap from standard library.
@@ -43,7 +45,10 @@ use std::collections::{hash_map::Entry as MapEntry, HashMap};
 pub struct LRUCache<T> {
     /// The most-recently-used entry is at index `head`. The entries form a linked list, linked to
     /// each other by key within the `entries` map.
+    #[cfg(not(feature = "fnv"))]
     entries: HashMap<u16, Entry<T>>,
+    #[cfg(feature = "fnv")]
+    entries: HashMap<u16, Entry<T>, FnvBuildHasher>,
     /// Index of the first entry. If the cache is empty, ignore this field.
     head: u16,
     /// Index of the last entry. If the cache is empty, ignore this field.
@@ -65,7 +70,7 @@ impl<T> LRUCache<T> {
     /// Create a new LRU cache that can hold `capacity` of entries.
     pub fn new(capacity: usize) -> Self {
         let cache = LRUCache {
-            entries: HashMap::new(),
+            entries: HashMap::default(),
             head: 0,
             tail: 0,
             capacity,
